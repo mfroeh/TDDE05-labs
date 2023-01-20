@@ -24,7 +24,7 @@ stuff "start-tdde05 \015"
 
 screen 2
 title "rviz"
-stuff "start-tdde05; rviz2 -d $HOME/TDDE05/ros2_ws/src/labs/air_lab_common/rviz/[name of your rviz config]\015"
+stuff "start-tdde05; rviz2 -d $HOME/TDDE05/ros2_ws/src/labs/air_lab_common/rviz/default.rviz\015"
 
 screen 3
 title "rqt"
