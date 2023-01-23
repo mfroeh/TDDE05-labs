@@ -6,8 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
-        - /TF1/Frames1
         - /RobotModel1
         - /RobotModel1/Description Topic1
         - /Map1
