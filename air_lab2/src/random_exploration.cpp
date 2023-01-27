@@ -1,8 +1,10 @@
-#include <functional>
+
 #include <future>
 #include <memory>
 #include <string>
 #include <sstream>
+#include <tuple>
+#include <random>
 
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 
@@ -29,10 +31,6 @@ class RandomExploration : public rclcpp::Node
 
     void send_goal()
     {
-      double x = 1.0;
-      double y = 1.0;
-      double angle = 1.0;
-
       auto goal_msg = NavigateToPose::Goal();
       goal_msg.pose.header.frame_id = "map";
       goal_msg.pose.pose.position.x = x;
@@ -66,7 +64,12 @@ class RandomExploration : public rclcpp::Node
   private:
     rclcpp_action::Client<NavigateToPose>::SharedPtr client_ptr_;
     rclcpp::TimerBase::SharedPtr timer_;
-    nav2_msgs::msg::Point last_pos_;
+    geometry_msgs::msg::Point last_pos_;
+    geometry_msgs::msg::Quaternion last_rot_;
+
+    double x;
+    double y;
+    double angle;
 
     void goal_response_callback(std::shared_future<GoalHandleNavigateToPose::SharedPtr> future)
     {
@@ -86,38 +89,62 @@ class RandomExploration : public rclcpp::Node
       std::ostringstream oss{};
       oss << "Feedback " << feedback->current_pose.pose.position.x;
       auto lp{feedback->current_pose.pose.position};
-      if (lp.x == last_pos_.x && lp.y == last_pos_.y && lp.z == last_pos_.z) {
+      auto rot{feedback->current_pose.pose.orientation};
+
+      // Test if there is == operator
+      if (lp.x == last_pos_.x && lp.y == last_pos_.y && lp.z == last_pos_.z && rot == last_rot_) {
         client_ptr_->async_cancel_goal(goal_handle);
-        // set new goal
-        /* send_goal(//something); */
       }
       last_pos_ = lp;
 
       if(feedback->navigation_time.sec>60)
       {
-        client_ptr_->async_cancel_goal(goal_handle);
-        RCLCPP_INFO(this->get_logger(), "Timeout");
-        rclcpp::shutdown();
+	client_ptr_->async_cancel_goal(goal_handle);
+	RCLCPP_INFO(this->get_logger(), "Timeout");
+	rclcpp::shutdown();
       }
     }
 
     void result_callback(const GoalHandleNavigateToPose::WrappedResult & result)
     {
       switch (result.code) {
-        case rclcpp_action::ResultCode::SUCCEEDED:
-          RCLCPP_INFO(this->get_logger(), "Goal was succeeded");
-          break;
-        case rclcpp_action::ResultCode::ABORTED:
-          RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
-          return;
-        case rclcpp_action::ResultCode::CANCELED:
-          RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
-          return;
-        default:
-          RCLCPP_ERROR(this->get_logger(), "Unknown result code");
-          return;
+	case rclcpp_action::ResultCode::SUCCEEDED:
+	  RCLCPP_INFO(this->get_logger(), "Goal was succeeded");
+	  send_new_goal();
+	  return;
+	case rclcpp_action::ResultCode::ABORTED:
+	  RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+	  return;
+	case rclcpp_action::ResultCode::CANCELED:
+	  RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+	  send_new_goal();
+	  return;
+	default:
+	  RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+	  return;
       }
-      rclcpp::shutdown();
+
+      //rclcpp::shutdown();
+    }
+
+    void send_new_goal() {
+      auto [x, y, angle]{get_random_location()};
+      this->x = x;
+      this->y = y;
+      this->angle = angle;
+      send_goal();
+    }
+
+    std::tuple<double, double, double> get_random_location() {
+      std::random_device rd{};
+      std::mt19937 gen{rd()};
+      std::uniform_real_distribution<> dis{0,5};
+      std::uniform_real_distribution<> dis_angle{-1,1};
+
+      double x{dis(gen)};
+      double y{dis(gen)};
+      double angle{dis_angle(gen)};
+      return {x, y, angle};
     }
 };  // class RandomExploration
 
