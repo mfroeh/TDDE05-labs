@@ -66,10 +66,11 @@ class RandomExploration : public rclcpp::Node
     rclcpp::TimerBase::SharedPtr timer_;
     geometry_msgs::msg::Point last_pos_;
     geometry_msgs::msg::Quaternion last_rot_;
+    int time_of_last_change;
 
-    double x;
-    double y;
-    double angle;
+    double x{10.0};
+    double y{5.0};
+    double angle{1.0};
 
     void goal_response_callback(std::shared_future<GoalHandleNavigateToPose::SharedPtr> future)
     {
@@ -86,16 +87,26 @@ class RandomExploration : public rclcpp::Node
         const std::shared_ptr<const NavigateToPose::Feedback> feedback)
     {
       RCLCPP_INFO(this->get_logger(), "Got feedback");
-      std::ostringstream oss{};
-      oss << "Feedback " << feedback->current_pose.pose.position.x;
       auto lp{feedback->current_pose.pose.position};
       auto rot{feedback->current_pose.pose.orientation};
 
+      RCLCPP_INFO(this->get_logger(), "%f,%f", lp.x, lp.y);
+
+      int cur_time{feedback->navigation_time.sec};
       // Test if there is == operator
-      if (lp.x == last_pos_.x && lp.y == last_pos_.y && lp.z == last_pos_.z && rot == last_rot_) {
-        client_ptr_->async_cancel_goal(goal_handle);
+      if (std::abs(lp.x-last_pos_.x) < 0.001 && std::abs(lp.y-last_pos_.y) < 0.001) {
+	//RCLCPP_INFO(this->get_logger(), "Got same position");
+	RCLCPP_INFO(this->get_logger(), "%d", cur_time);
+	if (cur_time - time_of_last_change > 2) {
+	  RCLCPP_INFO(this->get_logger(), "Canceled goal!");
+	  client_ptr_->async_cancel_goal(goal_handle);
+	  send_new_goal();
+	}
+      } else {
+	RCLCPP_INFO(this->get_logger(), "F<lksdjflksjdlkfjsDfjSFJLDJFLJDF");
+	last_pos_ = lp;
+	time_of_last_change = feedback->navigation_time.sec;
       }
-      last_pos_ = lp;
 
       if(feedback->navigation_time.sec>60)
       {
@@ -132,7 +143,9 @@ class RandomExploration : public rclcpp::Node
       this->x = x;
       this->y = y;
       this->angle = angle;
-      send_goal();
+      this->timer_ = this->create_wall_timer(
+          std::chrono::milliseconds(500),
+          std::bind(&RandomExploration::send_goal, this));
     }
 
     std::tuple<double, double, double> get_random_location() {
