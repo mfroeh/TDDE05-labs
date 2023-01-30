@@ -22,6 +22,10 @@ double euclidean(Point const& p1, Point const& p2) {
 class MyNode : public rclcpp::Node {
   public:
     MyNode() : Node{"mynode"}, first_position{}, count_{} {
+      declare_parameter("linear", 0.1);
+      declare_parameter("angular", 0.05);
+      declare_parameter("distance", 1.0);
+
       publisher_ = create_publisher<Twist>("cmd_vel", 10);
       subscription_ = create_subscription<Odometry>("odom", 10, std::bind(&MyNode::odom_callback, this, std::placeholders::_1));
       timer_ = create_wall_timer(500ms, std::bind(&MyNode::timer_callback, this));
@@ -33,15 +37,20 @@ class MyNode : public rclcpp::Node {
     rclcpp::Subscription<Odometry>::SharedPtr subscription_;
     Point first_position;
     size_t count_;
+    double distance;
 
     void timer_callback() {
       Twist message{};
+      double linear{get_parameter("linear").get_parameter_value().get<double>()};
+      double angular{get_parameter("angular").get_parameter_value().get<double>()};
+      distance = get_parameter("distance").get_parameter_value().get<double>();
+
       // Didn't work 
       /* message.linear = Vector3{0.1, 0.0, 0.0}; */
       message.linear = Vector3{};
-      message.linear.x = 0.1;
+      message.linear.x = linear;
       message.angular = Vector3{};
-      message.angular.x = 0.05;
+      message.angular.x = angular;
       RCLCPP_INFO(this->get_logger(), "Publishing:\n%s", this->twist_to_string(message).c_str());
       publisher_->publish(message);
     }
@@ -50,22 +59,15 @@ class MyNode : public rclcpp::Node {
     {
       RCLCPP_INFO(this->get_logger(), "I heard:\n%s", point_to_string(msg->pose.pose.position).c_str());
       check_exit(msg);
-      /* if (count_++ == 0) { */
-      /*   auto pos = msg->pose.pose.position; */
-      /*   first_position = pos; */
-      /* } else if (false) { // TODO: CHEck if deviated */
-      /*     RCLCPP_INFO(this->get_logger(), "Moved enough, shutting down."); */
-      /*     rclcpp::shutdown(); 
-      }*/
     }
 
     void check_exit(Odometry::SharedPtr const& msg) {
       Point pos = msg->pose.pose.position;
       if (count_++ == 0) {
-        first_position = pos;
-      } else if (euclidean(pos, first_position) > 1.0) {
-          RCLCPP_INFO(this->get_logger(), "Moved enough, shutting down.");
-          rclcpp::shutdown();
+	first_position = pos;
+      } else if (euclidean(pos, first_position) > distance) {
+	RCLCPP_INFO(this->get_logger(), "Moved enough, shutting down.");
+	rclcpp::shutdown();
       }
     }
 
@@ -77,7 +79,7 @@ class MyNode : public rclcpp::Node {
       oss << "}\n";
       return oss.str();
     }
- 
+
     std::string point_to_string(Point const& position) {
       std::ostringstream oss{};
       oss << "{ " << position.x << ", " << position.y << ", " << position.z << " }\n";

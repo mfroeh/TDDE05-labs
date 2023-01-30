@@ -22,6 +22,8 @@ ament_target_dependencies(lab2_node rclcpp std_msgs geometry_msgs nav_msgs rclcp
 install(TARGETS lab2_node
   DESTINATION lib/${PROJECT_NAME})
 
+SET(CMAKE_EXPORT_COMPILE_COMMANDS True)
+
 add_executable(random_exploration src/random_exploration.cpp)
 target_include_directories(random_exploration PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

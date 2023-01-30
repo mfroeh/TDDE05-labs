@@ -1,4 +1,3 @@
-
 #include <future>
 #include <memory>
 #include <string>
@@ -11,6 +10,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
+  using namespace std::placeholders;
 class RandomExploration : public rclcpp::Node
 {
   public:
@@ -40,8 +40,6 @@ class RandomExploration : public rclcpp::Node
 
       last_pos_ = goal_msg.pose.pose.position;
 
-      using namespace std::placeholders;
-
       this->timer_->cancel();
 
       if (!this->client_ptr_->wait_for_action_server()) {
@@ -65,7 +63,6 @@ class RandomExploration : public rclcpp::Node
     rclcpp_action::Client<NavigateToPose>::SharedPtr client_ptr_;
     rclcpp::TimerBase::SharedPtr timer_;
     geometry_msgs::msg::Point last_pos_;
-    geometry_msgs::msg::Quaternion last_rot_;
     int time_of_last_change;
 
     double x{10.0};
@@ -86,34 +83,18 @@ class RandomExploration : public rclcpp::Node
         GoalHandleNavigateToPose::SharedPtr goal_handle,
         const std::shared_ptr<const NavigateToPose::Feedback> feedback)
     {
-      RCLCPP_INFO(this->get_logger(), "Got feedback");
       auto lp{feedback->current_pose.pose.position};
-      auto rot{feedback->current_pose.pose.orientation};
-
-      RCLCPP_INFO(this->get_logger(), "%f,%f", lp.x, lp.y);
+      //RCLCPP_INFO(this->get_logger(), "Position: %f,%f", lp.x, lp.y);
 
       int cur_time{feedback->navigation_time.sec};
-      // Test if there is == operator
-      if (std::abs(lp.x-last_pos_.x) < 0.001 && std::abs(lp.y-last_pos_.y) < 0.001) {
-	//RCLCPP_INFO(this->get_logger(), "Got same position");
-	RCLCPP_INFO(this->get_logger(), "%d", cur_time);
-	if (cur_time - time_of_last_change > 2) {
-	  RCLCPP_INFO(this->get_logger(), "Canceled goal!");
-	  client_ptr_->async_cancel_goal(goal_handle);
-	  send_new_goal();
-	}
-      } else {
-	RCLCPP_INFO(this->get_logger(), "F<lksdjflksjdlkfjsDfjSFJLDJFLJDF");
+      bool position_changed = std::abs(lp.x-last_pos_.x) < 0.05 && std::abs(lp.y-last_pos_.y) < 0.05;
+      if (position_changed && cur_time - time_of_last_change > 4) {
+	  client_ptr_->async_cancel_all_goals();
+      } else if(position_changed){
 	last_pos_ = lp;
 	time_of_last_change = feedback->navigation_time.sec;
       }
 
-      if(feedback->navigation_time.sec>60)
-      {
-	client_ptr_->async_cancel_goal(goal_handle);
-	RCLCPP_INFO(this->get_logger(), "Timeout");
-	rclcpp::shutdown();
-      }
     }
 
     void result_callback(const GoalHandleNavigateToPose::WrappedResult & result)
@@ -134,8 +115,6 @@ class RandomExploration : public rclcpp::Node
 	  RCLCPP_ERROR(this->get_logger(), "Unknown result code");
 	  return;
       }
-
-      //rclcpp::shutdown();
     }
 
     void send_new_goal() {
@@ -143,15 +122,13 @@ class RandomExploration : public rclcpp::Node
       this->x = x;
       this->y = y;
       this->angle = angle;
-      this->timer_ = this->create_wall_timer(
-          std::chrono::milliseconds(500),
-          std::bind(&RandomExploration::send_goal, this));
+      send_goal();
     }
 
     std::tuple<double, double, double> get_random_location() {
       std::random_device rd{};
       std::mt19937 gen{rd()};
-      std::uniform_real_distribution<> dis{0,5};
+      std::uniform_real_distribution<> dis{0,3};
       std::uniform_real_distribution<> dis_angle{-1,1};
 
       double x{dis(gen)};
