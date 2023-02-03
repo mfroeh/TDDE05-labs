@@ -11,23 +11,26 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(air_lab_interfaces REQUIRED)
 find_package(irobot_create_msgs REQUIRED)
+find_package(TstML REQUIRED)
 
-add_executable(lab3_node src/lab3_node.cpp)
-target_include_directories(lab3_node PUBLIC
+add_executable(tst_executor src/tst_executor.cpp)
+target_include_directories(tst_executor PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_compile_features(lab3_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(tst_executor PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-  lab3_node
+  tst_executor
   "rclcpp"
   "rclcpp_action"
   "air_lab_interfaces"
   "irobot_create_msgs"
+  "TstML"
 )
+target_link_libraries(tst_executor TstMLExecutor)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
-install(TARGETS lab3_node
+install(TARGETS tst_executor
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

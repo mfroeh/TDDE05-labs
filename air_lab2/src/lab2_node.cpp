@@ -45,7 +45,7 @@ class MyNode : public rclcpp::Node {
       double angular{get_parameter("angular").get_parameter_value().get<double>()};
       distance = get_parameter("distance").get_parameter_value().get<double>();
 
-      // Didn't work 
+      // Didn't work
       /* message.linear = Vector3{0.1, 0.0, 0.0}; */
       message.linear = Vector3{};
       message.linear.x = linear;
