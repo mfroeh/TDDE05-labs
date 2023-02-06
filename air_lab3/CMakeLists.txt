@@ -11,7 +11,9 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(air_lab_interfaces REQUIRED)
 find_package(irobot_create_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(TstML REQUIRED)
+find_package(nav2_msgs REQUIRED)
 
 add_executable(tst_executor src/tst_executor.cpp)
 target_include_directories(tst_executor PUBLIC
@@ -25,6 +27,8 @@ ament_target_dependencies(
   "air_lab_interfaces"
   "irobot_create_msgs"
   "TstML"
+  std_srvs
+  "nav2_msgs"
 )
 target_link_libraries(tst_executor TstMLExecutor)
 

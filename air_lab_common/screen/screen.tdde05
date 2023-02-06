@@ -39,6 +39,10 @@ title "random_exploration launcher"
 stuff "start-tdde05; ros2 run air_lab2 random_exploration"
 
 screen 6
-title "undock"
-stuff "ros2 action send_goal /undock irobot_create_msgs/action/Undock {}"
+title "launch tst_executor"
+stuff "start-tdde05; ros2 run air_lab3 tst_executor"
+
+screen 7
+title "request execute tst node service"
+stuff "start-tdde05; ros2 service call /execute_tst air_lab_interfaces/srv/ExecuteTst \"tst_file: '`ros2 pkg prefix air_tsts`/share/air_tsts/tsts/undock.json'\""
 
