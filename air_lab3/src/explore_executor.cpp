@@ -8,6 +8,7 @@
 #include <geometry_msgs/msg/detail/quaternion__struct.hpp>
 #include <irobot_create_msgs/action/detail/navigate_to_position__struct.hpp>
 #include <memory>
+#include <nav2_msgs/action/detail/navigate_to_pose__struct.hpp>
 #include <nav2_msgs/msg/detail/speed_limit__struct.hpp>
 #include <queue>
 #include <sstream>
@@ -22,7 +23,7 @@
 
 class ExploreExecutor : public TstML::Executor::AbstractNodeExecutor {
 public:
-  using Explore = irobot_create_msgs::action::NavigateToPosition;
+  using Explore = nav2_msgs::action::NavigateToPose;
   using GoalHandleExplore = rclcpp_action::ClientGoalHandle<Explore>;
 
   ExploreExecutor(const TstML::TSTNode *_node,
@@ -33,7 +34,7 @@ public:
         rclcpp::Node::make_shared(("explore_node") + std::to_string(++counter));
     m_executor.add_node(m_node);
     m_executor_thread = std::thread([this]() { m_executor.spin(); });
-    m_client_ptr = rclcpp_action::create_client<Explore>(m_node, "explore");
+    m_client_ptr = rclcpp_action::create_client<Explore>(m_node, "navigate_to_pose");
 
     double radius{
         node()
@@ -46,10 +47,14 @@ public:
                  ->getParameter(TstML::TSTNode::ParameterType::Specific, "b")
                  .toDouble()};
 
+    constexpr double pi = 3.14159265358979323846;
+
+    double increment{pi/4};
+
     double theta{};
     double cur_r{a + b * theta};
     while (cur_r < radius) {
-      theta += 3.14 / 4;
+      theta += increment;
       cur_r = a + b * theta;
 
       geometry_msgs::msg::Point p{};
@@ -71,7 +76,8 @@ public:
 
     auto front{waypoints.front()};
     waypoints.pop();
-    goal_msg.goal_pose.pose.position = front;
+    goal_msg.pose.pose.position = front;
+    goal_msg.pose.header.frame_id = "map";
 
     auto send_goal_options = rclcpp_action::Client<Explore>::SendGoalOptions();
     send_goal_options.goal_response_callback =
@@ -100,14 +106,16 @@ public:
 
   void
   feedback_callback(GoalHandleExplore::SharedPtr goal_handle,
-                    const std::shared_ptr<const Explore::Feedback> feedback) {}
+                    const std::shared_ptr<const Explore::Feedback> feedback) {
+      RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+  }
 
   void result_callback(const GoalHandleExplore::WrappedResult &result) {
     switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       RCLCPP_INFO(m_node->get_logger(), "Goal was succeeded");
-      start();
-      executionFinished(TstML::Executor::ExecutionStatus::Finished());
+      if(waypoints.size() != 0) start();
+      else executionFinished(TstML::Executor::ExecutionStatus::Finished());
       break;
     case rclcpp_action::ResultCode::ABORTED:
       RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted");

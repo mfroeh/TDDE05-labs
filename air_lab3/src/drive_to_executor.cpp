@@ -8,6 +8,7 @@
 #include <geometry_msgs/msg/detail/quaternion__struct.hpp>
 #include <irobot_create_msgs/action/detail/navigate_to_position__struct.hpp>
 #include <memory>
+#include <nav2_msgs/action/detail/navigate_to_pose__struct.hpp>
 #include <nav2_msgs/msg/detail/speed_limit__struct.hpp>
 #include <sstream>
 #include <string>
@@ -20,7 +21,7 @@
 
 class DriveToExecutor : public TstML::Executor::AbstractNodeExecutor {
 public:
-  using DriveTo = irobot_create_msgs::action::NavigateToPosition;
+  using DriveTo = nav2_msgs::action::NavigateToPose;
   using GoalHandleDriveTo = rclcpp_action::ClientGoalHandle<DriveTo>;
 
   DriveToExecutor(const TstML::TSTNode *_node,
@@ -34,7 +35,8 @@ public:
     publisher_ =
         m_node->create_publisher<nav2_msgs::msg::SpeedLimit>("speed_limit", 10);
 
-    m_client_ptr = rclcpp_action::create_client<DriveTo>(m_node, "drive_to");
+    m_client_ptr =
+        rclcpp_action::create_client<DriveTo>(m_node, "navigate_to_pose");
   }
   ~DriveToExecutor() {
     m_executor.cancel();
@@ -57,7 +59,8 @@ public:
     point.x = x;
     point.y = y;
     point.z = z;
-    goal_msg.goal_pose.pose.position = point;
+    goal_msg.pose.pose.position = point;
+    goal_msg.pose.header.frame_id = "map";
 
     if (node()->hasParameter(TstML::TSTNode::ParameterType::Specific,
                              "heading")) {
@@ -70,7 +73,7 @@ public:
       orientation.y = 0;
       orientation.z = std::sin(yaw / 2);
       orientation.w = std::cos(yaw / 2);
-      goal_msg.goal_pose.pose.orientation = orientation;
+      goal_msg.pose.pose.orientation = orientation;
     }
 
     if (node()->hasParameter(TstML::TSTNode::ParameterType::Specific,
@@ -95,60 +98,65 @@ public:
     m_client_ptr->async_send_goal(goal_msg, send_goal_options);
 
     RCLCPP_INFO(m_node->get_logger(), "%f, %f, %f", x, y, z);
+    RCLCPP_INFO(m_node->get_logger(), "%f, %f, %f",
+                goal_msg.pose.pose.position.x, goal_msg.pose.pose.position.y,
+                goal_msg.pose.pose.position.z);
 
     return TstML::Executor::ExecutionStatus::Started();
   }
 
   void goal_response_callback(
-          std::shared_future<GoalHandleDriveTo::SharedPtr> future) {
-      m_goal_handle = future.get();
-      if (!m_goal_handle) {
-          executionFinished(TstML::Executor::ExecutionStatus::Aborted());
-          RCLCPP_ERROR(m_node->get_logger(), "Goal was rejected by server");
-      } else {
-          RCLCPP_INFO(m_node->get_logger(),
+      std::shared_future<GoalHandleDriveTo::SharedPtr> future) {
+    m_goal_handle = future.get();
+    if (!m_goal_handle) {
+      executionFinished(TstML::Executor::ExecutionStatus::Aborted());
+      RCLCPP_ERROR(m_node->get_logger(), "Goal was rejected by server");
+    } else {
+      RCLCPP_INFO(m_node->get_logger(),
                   "Goal accepted by server, waiting for result");
-      }
+    }
   }
 
   void
-      feedback_callback(GoalHandleDriveTo::SharedPtr goal_handle,
-              const std::shared_ptr<const DriveTo::Feedback> feedback) {}
+  feedback_callback(GoalHandleDriveTo::SharedPtr goal_handle,
+                    const std::shared_ptr<const DriveTo::Feedback> feedback) {
+      RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+  }
 
   void result_callback(const GoalHandleDriveTo::WrappedResult &result) {
-      switch (result.code) {
-          case rclcpp_action::ResultCode::SUCCEEDED:
-              RCLCPP_INFO(m_node->get_logger(), "Goal was succeeded");
-              executionFinished(TstML::Executor::ExecutionStatus::Finished());
-              break;
-          case rclcpp_action::ResultCode::ABORTED:
-              RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted");
-              executionFinished(TstML::Executor::ExecutionStatus::Aborted());
-              return;
-          case rclcpp_action::ResultCode::CANCELED:
-              RCLCPP_ERROR(m_node->get_logger(), "Goal was canceled");
-              executionFinished(TstML::Executor::ExecutionStatus::Aborted());
-              return;
-          default:
-              RCLCPP_ERROR(m_node->get_logger(), "Unknown result code");
-              executionFinished(TstML::Executor::ExecutionStatus::Aborted());
-              return;
-      }
+    switch (result.code) {
+    case rclcpp_action::ResultCode::SUCCEEDED:
+      RCLCPP_INFO(m_node->get_logger(), "Goal was succeeded");
+      executionFinished(TstML::Executor::ExecutionStatus::Finished());
+      break;
+    case rclcpp_action::ResultCode::ABORTED:
+      RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted: %d", result.code);
+      executionFinished(TstML::Executor::ExecutionStatus::Aborted());
+      return;
+    case rclcpp_action::ResultCode::CANCELED:
+      RCLCPP_ERROR(m_node->get_logger(), "Goal was canceled");
+      executionFinished(TstML::Executor::ExecutionStatus::Aborted());
+      return;
+    default:
+      RCLCPP_ERROR(m_node->get_logger(), "Unknown result code");
+      executionFinished(TstML::Executor::ExecutionStatus::Aborted());
+      return;
+    }
   }
 
   TstML::Executor::ExecutionStatus pause() override {
-      return TstML::Executor::ExecutionStatus::Running();
+    return TstML::Executor::ExecutionStatus::Running();
   }
   TstML::Executor::ExecutionStatus resume() override {
-      return TstML::Executor::ExecutionStatus::Running();
+    return TstML::Executor::ExecutionStatus::Running();
   }
   TstML::Executor::ExecutionStatus stop() override {
-      m_client_ptr->async_cancel_goal(m_goal_handle);
-      return TstML::Executor::ExecutionStatus::Finished();
+    m_client_ptr->async_cancel_goal(m_goal_handle);
+    return TstML::Executor::ExecutionStatus::Finished();
   }
   TstML::Executor::ExecutionStatus abort() override {
-      m_client_ptr->async_cancel_goal(m_goal_handle);
-      return TstML::Executor::ExecutionStatus::Aborted();
+    m_client_ptr->async_cancel_goal(m_goal_handle);
+    return TstML::Executor::ExecutionStatus::Aborted();
   }
 
 private:
