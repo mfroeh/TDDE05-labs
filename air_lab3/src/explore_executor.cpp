@@ -34,7 +34,8 @@ public:
         rclcpp::Node::make_shared(("explore_node") + std::to_string(++counter));
     m_executor.add_node(m_node);
     m_executor_thread = std::thread([this]() { m_executor.spin(); });
-    m_client_ptr = rclcpp_action::create_client<Explore>(m_node, "navigate_to_pose");
+    m_client_ptr =
+        rclcpp_action::create_client<Explore>(m_node, "navigate_to_pose");
 
     double radius{
         node()
@@ -49,7 +50,7 @@ public:
 
     constexpr double pi = 3.14159265358979323846;
 
-    double increment{pi/4};
+    double increment{pi / 4};
 
     double theta{};
     double cur_r{a + b * theta};
@@ -107,15 +108,28 @@ public:
   void
   feedback_callback(GoalHandleExplore::SharedPtr goal_handle,
                     const std::shared_ptr<const Explore::Feedback> feedback) {
-      RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+    RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+    auto current_position{feedback->current_pose.pose.position};
+    // RCLCPP_INFO(this->get_logger(), "Position: %f,%f", lp.x, lp.y);
+    int cur_time{feedback->navigation_time.sec};
+    bool same_position = std::abs(current_position.x - last_pos_.x) < 0.05 &&
+                         std::abs(current_position.y - last_pos_.y) < 0.05;
+    if (same_position && cur_time - time_of_last_change > 4) {
+      m_client_ptr->async_cancel_all_goals();
+    } else if (!same_position) {
+      last_pos_ = current_position;
+      time_of_last_change = feedback->navigation_time.sec;
+    }
   }
 
   void result_callback(const GoalHandleExplore::WrappedResult &result) {
     switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       RCLCPP_INFO(m_node->get_logger(), "Goal was succeeded");
-      if(waypoints.size() != 0) start();
-      else executionFinished(TstML::Executor::ExecutionStatus::Finished());
+      if (waypoints.size() != 0)
+        start();
+      else
+        executionFinished(TstML::Executor::ExecutionStatus::Finished());
       break;
     case rclcpp_action::ResultCode::ABORTED:
       RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted");
@@ -123,8 +137,13 @@ public:
       return;
     case rclcpp_action::ResultCode::CANCELED:
       RCLCPP_ERROR(m_node->get_logger(), "Goal was canceled");
-      executionFinished(TstML::Executor::ExecutionStatus::Aborted());
-      return;
+      if (waypoints.size() != 0)
+        start();
+      else {
+        executionFinished(TstML::Executor::ExecutionStatus::Aborted());
+        return;
+      }
+      break;
     default:
       RCLCPP_ERROR(m_node->get_logger(), "Unknown result code");
       executionFinished(TstML::Executor::ExecutionStatus::Aborted());
@@ -155,4 +174,6 @@ private:
   GoalHandleExplore::SharedPtr m_goal_handle;
   rclcpp::Publisher<nav2_msgs::msg::SpeedLimit>::SharedPtr publisher_;
   std::queue<geometry_msgs::msg::Point> waypoints;
+  geometry_msgs::msg::Point last_pos_;
+  int time_of_last_change;
 };
