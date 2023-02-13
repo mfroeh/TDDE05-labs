@@ -79,8 +79,10 @@ private:
     // Start execution
     tst_executor->start();
 
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Before waitForFinished", name.c_str());
     // Block until the execution has finished
-    TstML::Executor::ExecutionStatus status = tst_executor->waitForFinished();
+    TstML::Executor::ExecutionStatus status = tst_executor->waitForFinished(10000);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "After waitForFinished", name.c_str());
 
     // Display the result of execution
     response->success = status == TstML::Executor::ExecutionStatus::Finished();
