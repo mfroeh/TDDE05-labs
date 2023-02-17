@@ -18,10 +18,6 @@ screen 0
 title "simple sim"
 stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py\015"
 
-screen 1
-title "Here we send stuff to the robot"
-stuff "start-tdde05 \015"
-
 screen 2
 title "rviz"
 stuff "start-tdde05; rviz2 -d $HOME/TDDE05/ros2_ws/src/labs/air_lab_common/rviz/default.rviz\015"
@@ -30,19 +26,15 @@ screen 3
 title "rqt"
 stuff "start-tdde05; rqt\015"
 
-screen 4
-title "lab2_node launcher"
-stuff "start-tdde05; ros2 run air_lab2 lab2_node"
-
-screen 5
-title "random_exploration launcher"
-stuff "start-tdde05; ros2 run air_lab2 random_exploration"
-
 screen 6
 title "launch tst_executor"
 stuff "start-tdde05; ros2 run air_lab3 tst_executor"
 
 screen 7
-title "request execute tst node service"
-stuff "start-tdde05; ros2 service call /execute_tst air_lab_interfaces/srv/ExecuteTst \"tst_file: '`ros2 pkg prefix air_tsts`/share/air_tsts/tsts/undock.json'\""
+title "launch database server"
+stuff "start-tdde05; rm -rf $HOME/.lrs_kdb/stores/; ros2 run ros2_kdb server\015"
+
+screen 8
+title "execute explore record semantic"
+stuff "start-tdde05; ros2 service call /execute_tst air_lab_interfaces/srv/ExecuteTst \"tst_file: '`ros2 pkg prefix air_tsts`/share/air_tsts/tsts/explore_record_semantic.json'\""
 
