@@ -20,6 +20,7 @@
 #include "dock_executor.cpp"
 #include "drive_to_executor.cpp"
 #include "explore_executor.cpp"
+#include "record_semantic_executor.cpp"
 
 using namespace std::placeholders;
 using std_srvs::srv::Empty;
