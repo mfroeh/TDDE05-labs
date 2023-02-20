@@ -4,6 +4,7 @@
 #include <memory>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/future_return_code.hpp>
+#include <rclcpp/logging.hpp>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -26,7 +27,7 @@ public:
                          TstML::Executor::AbstractExecutionContext *_context)
       : TstML::Executor::AbstractNodeExecutor(_node, _context) {
     static int counter{};
-    m_node = rclcpp::Node::make_shared("_node" + std::to_string(++counter));
+    m_node = rclcpp::Node::make_shared("record_semantic_node" + std::to_string(++counter));
     m_executor.add_node(m_node);
     m_executor_thread = std::thread([this]() { m_executor.spin(); });
   }
@@ -59,22 +60,20 @@ public:
 
   void semantic_callback(const SemanticObservation::SharedPtr msg) {
     RCLCPP_INFO(this->m_node->get_logger(), "I heard:\n%f", msg->point.point.x);
-    rclcpp::Client<ServiceT>::SharedRequest request;
+    RCLCPP_INFO(this->m_node->get_logger(), "graphname: %s, uuid: %s, klass: %s\n", graph_name.c_str(), msg->uuid.c_str(), msg->klass.c_str());
+    auto request{std::make_shared<ServiceT::Request>()};
     request->graphname = graph_name;
-    request->query =
-        "PREFIX gis: <http://www.ida.liu.se/~TDDE05/gis>"
-        "PREFIX properties: <http://www.ida.liu.se/~TDDE05/properties>"
-        "SELECT ?x ?y WHERE { <" +
-        msg->uuid + "> a <" + msg->klass +
-        "> ;"
-        "properties:location [ gis:x ?x; gis:y ?y ] . }";
-    auto response = client->async_send_request(request);
-    if (rclcpp::spin_until_future_complete(m_node, response) ==
-        rclcpp::FutureReturnCode ::SUCCESS) {
-      RCLCPP_INFO(this->m_node->get_logger(), "Success");
-    } else {
-      RCLCPP_INFO(this->m_node->get_logger(), "Failure");
-    }
+
+    std::ostringstream os{};
+    os << "PREFIX gis: <http://www.ida.liu.se/~TDDE05/gis>" << std::endl
+       << "PREFIX properties: <http://www.ida.liu.se/~TDDE05/properties>" << std::endl
+       << "SELECT ?x ?y WHERE { <" << msg->uuid.c_str() << "> a <" << msg->klass.c_str() << "> ;" << std::endl;
+    os << "properties:location [ gis:x ?x; gis:y ?y ] . }" << std::endl;
+    request->query = os.str();
+
+    RCLCPP_INFO(this->m_node->get_logger(), "query: %s\n", request->query.c_str());
+    auto response = client->async_send_request(request).get();
+    RCLCPP_INFO(this->m_node->get_logger(), "%d\n", response->success);
   }
 
   TstML::Executor::ExecutionStatus pause() override {
