@@ -10,6 +10,7 @@
 #include <memory>
 #include <nav2_msgs/action/detail/navigate_to_pose__struct.hpp>
 #include <nav2_msgs/msg/detail/speed_limit__struct.hpp>
+#include <nav_msgs/msg/detail/odometry__struct.hpp>
 #include <queue>
 #include <sstream>
 #include <string>
@@ -37,32 +38,10 @@ public:
     m_client_ptr =
         rclcpp_action::create_client<Explore>(m_node, "navigate_to_pose");
 
-    double radius{
-        node()
-            ->getParameter(TstML::TSTNode::ParameterType::Specific, "radius")
-            .toDouble()};
-    double a{node()
-                 ->getParameter(TstML::TSTNode::ParameterType::Specific, "a")
-                 .toDouble()};
-    double b{node()
-                 ->getParameter(TstML::TSTNode::ParameterType::Specific, "b")
-                 .toDouble()};
-
-    constexpr double pi = 3.14159265358979323846;
-
-    double increment{pi / 4};
-
-    double theta{};
-    double cur_r{a + b * theta};
-    while (cur_r < radius) {
-      theta += increment;
-      cur_r = a + b * theta;
-
-      geometry_msgs::msg::Point p{};
-      p.x = std::cos(theta) * cur_r;
-      p.y = std::sin(theta) * cur_r;
-      waypoints.push(p);
-    }
+    subscription = m_node->create_subscription<nav_msgs::msg::Odometry>(
+        "odom", 10,
+        std::bind(&ExploreExecutor::odom_callback, this,
+                  std::placeholders::_1));
   }
 
   ~ExploreExecutor() {
@@ -72,6 +51,8 @@ public:
 
   TstML::Executor::ExecutionStatus start() override {
     using namespace std::placeholders;
+    if (!hasWaypoints)
+        return TstML::Executor::ExecutionStatus::Started();
 
     auto goal_msg = Explore::Goal();
 
@@ -120,6 +101,41 @@ public:
       last_pos_ = current_position;
       time_of_last_change = feedback->navigation_time.sec;
     }
+  }
+
+  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+    if (hasWaypoints)
+      return;
+    RCLCPP_INFO(m_node->get_logger(), "Got first odom message\n");
+
+    double radius{
+        node()
+            ->getParameter(TstML::TSTNode::ParameterType::Specific, "radius")
+            .toDouble()};
+    double a{node()
+                 ->getParameter(TstML::TSTNode::ParameterType::Specific, "a")
+                 .toDouble()};
+    double b{node()
+                 ->getParameter(TstML::TSTNode::ParameterType::Specific, "b")
+                 .toDouble()};
+    constexpr double pi = 3.14159265358979323846;
+    double increment{pi / 4};
+
+    double theta{};
+    double cur_r{a + b * theta};
+    geometry_msgs::msg::Point pos = msg->pose.pose.position;
+    while (cur_r < radius) {
+      theta += increment;
+      cur_r = a + b * theta;
+
+      geometry_msgs::msg::Point p{};
+      p.x = pos.x + std::cos(theta) * cur_r;
+      p.y = pos.y + std::sin(theta) * cur_r;
+      waypoints.push(p);
+    }
+
+    hasWaypoints = true;
+    start();
   }
 
   void result_callback(const GoalHandleExplore::WrappedResult &result) {
@@ -175,5 +191,7 @@ private:
   rclcpp::Publisher<nav2_msgs::msg::SpeedLimit>::SharedPtr publisher_;
   std::queue<geometry_msgs::msg::Point> waypoints;
   geometry_msgs::msg::Point last_pos_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subscription;
   int time_of_last_change;
+  bool hasWaypoints{};
 };
