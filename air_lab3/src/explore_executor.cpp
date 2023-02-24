@@ -87,9 +87,9 @@ public:
   }
 
   void
-  feedback_callback(GoalHandleExplore::SharedPtr goal_handle,
+  feedback_callback(GoalHandleExplore::SharedPtr ,
                     const std::shared_ptr<const Explore::Feedback> feedback) {
-    RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+    //RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
     auto current_position{feedback->current_pose.pose.position};
     // RCLCPP_INFO(this->get_logger(), "Position: %f,%f", lp.x, lp.y);
     int cur_time{feedback->navigation_time.sec};

@@ -118,9 +118,9 @@ public:
   }
 
   void
-  feedback_callback(GoalHandleDriveTo::SharedPtr goal_handle,
-                    const std::shared_ptr<const DriveTo::Feedback> feedback) {
-      RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
+  feedback_callback(GoalHandleDriveTo::SharedPtr ,
+                    const std::shared_ptr<const DriveTo::Feedback> ) {
+      //RCLCPP_INFO(m_node->get_logger(), "%f", feedback->distance_remaining);
   }
 
   void result_callback(const GoalHandleDriveTo::WrappedResult &result) {
@@ -130,7 +130,7 @@ public:
       executionFinished(TstML::Executor::ExecutionStatus::Finished());
       break;
     case rclcpp_action::ResultCode::ABORTED:
-      RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted: %d", result.code);
+      RCLCPP_ERROR(m_node->get_logger(), "Goal was aborted: %d", (int)result.code);
       executionFinished(TstML::Executor::ExecutionStatus::Aborted());
       return;
     case rclcpp_action::ResultCode::CANCELED:
