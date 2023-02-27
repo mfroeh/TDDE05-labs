@@ -38,3 +38,6 @@ screen 8
 title "execute explore record semantic"
 stuff "start-tdde05; ros2 service call /execute_tst air_lab_interfaces/srv/ExecuteTst \"tst_file: '`ros2 pkg prefix air_tsts`/share/air_tsts/tsts/explore_record_semantic.json'\""
 
+screen 9
+title "visualizer"
+stuff "start-tdde05; ros2 run air_lab4 visualizer"
