@@ -115,8 +115,8 @@ private:
           for (auto &&obj : objects) {
             auto tmp{obj.toObject()};
             vec.push_back(Object{
-                tmp["obj_id"].toString().toStdString(),
-                tmp["class"].toString().toStdString(),
+                tmp["obj_id"].toObject()["value"].toString().toStdString(),
+                tmp["class"].toObject()["value"].toString().toStdString(),
                 tmp["x"].toObject()["value"].toDouble(),
                 tmp["y"].toObject()["value"].toDouble(),
             });
