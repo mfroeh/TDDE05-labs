@@ -10,6 +10,7 @@ Panels:
         - /RobotModel1/Description Topic1
         - /Map1
         - /Map1/Topic1
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 873
   - Class: rviz_common/Selection
@@ -574,6 +575,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /plan
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /semantic_sensor_visualizer
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -620,7 +633,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.281550884246826
+      Distance: 4.020872116088867
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
