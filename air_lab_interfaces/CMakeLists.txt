@@ -12,6 +12,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
       "srv/ExecuteTst.srv"
+      "msg/Goal.msg"
+      "msg/Goals.msg"
       )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
