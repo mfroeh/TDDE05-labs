@@ -16,7 +16,11 @@ bindkey ^e copy
 
 screen 0
 title "simple sim"
-stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py\015"
+stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py world:=office_1\015" #ros2 launch air_bringup turtle.launch.py\015"
+
+screen 1
+title "Create file and insert into database"
+stuff "ros2 run air_simple_sim generate_rdf office_1; ros2 service call /kdb_server/insert_triples  ros2_kdb_msgs/srv/InsertTriples \"\ngraphname: 'semanticobject'\nformat: 'ttl'\ncontent: '`ros2 run air_simple_sim generate_rdf office_1`'\""
 
 screen 2
 title "rviz"
