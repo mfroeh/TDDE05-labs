@@ -12,7 +12,6 @@
 #include <visualization_msgs/msg/detail/marker_array__struct.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -37,19 +36,12 @@ public:
     publisher =
         create_publisher<MarkerArray>("/semantic_sensor_visualizer", 10);
     timer = create_wall_timer(500ms, std::bind(&Visualizer::query, this));
-
-    // The tf_buffer and tf_listener needs to be kept alive and should be
-    // created in a constructor
-    tf_buffer = std::make_unique<tf2_ros::Buffer>(get_clock());
-    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   }
 
 private:
   Publisher<MarkerArray>::SharedPtr publisher;
   TimerBase::SharedPtr timer;
   Client<QueryDatabase>::SharedPtr client;
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
   std::string graphname{"semanticobject"};
 
@@ -68,29 +60,17 @@ private:
     marker.header.frame_id = "odom";
     marker.type = visualization_msgs::msg::Marker::CUBE_LIST;
     marker.action = 0;
-    marker.scale.x = 5.5;
+    marker.scale.x = 0.5;
     marker.scale.y = 0.5;
     marker.scale.z = 0.5;
     marker.pose.orientation.w = 1.0;
     marker.color.a = 1.0;
 
     for (auto &&obj : objects) {
-      RCLCPP_INFO(get_logger(), "%s: %f, %f\n", obj.uuid.c_str(), obj.x, obj.y);
-      PointStamped stamped{};
-      stamped.header.frame_id = "turtlebot0/semantic_sensor";
-      stamped.point.x = obj.x;
-      stamped.point.y = obj.y;
-
-      PointStamped p_after{};
-      try {
-        p_after = tf_buffer->transform(stamped, "map");
-      } catch (const tf2::TransformException &ex) {
-          RCLCPP_INFO(get_logger(), "Could not transform %s to %s: %s",
-            stamped.header.frame_id.c_str(), "map", ex.what());
-        continue;
-      }
-
-      marker.points.push_back(p_after.point);
+      Point p{};
+      p.x = obj.x;
+      p.y = obj.y;
+      marker.points.push_back(p);
 
       // Depending on class
       ColorRGBA color;

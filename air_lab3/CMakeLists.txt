@@ -16,6 +16,10 @@ find_package(TstML REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(air_simple_sim_msgs REQUIRED)
 find_package(ros2_kdb_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_kdl REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 add_executable(tst_executor src/tst_executor.cpp)
 target_include_directories(tst_executor PUBLIC
@@ -33,6 +37,10 @@ ament_target_dependencies(
   "nav2_msgs"
   "air_simple_sim_msgs"
   "ros2_kdb_msgs"
+  tf2
+  tf2_ros
+  tf2_kdl
+  geometry_msgs
 )
 target_link_libraries(tst_executor TstMLExecutor)
 
