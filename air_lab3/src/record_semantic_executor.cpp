@@ -121,17 +121,12 @@ public:
   }
 
   void insert(const SemanticObservation::SharedPtr msg) {
-    PointStamped stamped{};
-    stamped.header.frame_id = "turtlebot0/semantic_sensor";
-    stamped.point.x = msg->point.point.x;
-    stamped.point.y = msg->point.point.y;
-
-    PointStamped p_after{};
+    PointStamped p{};
     try {
-      p_after = tf_buffer->transform(stamped, "map");
+      p = tf_buffer->transform(msg->point, "map");
     } catch (const tf2::TransformException &ex) {
       RCLCPP_INFO(m_node->get_logger(), "Could not transform %s to %s: %s",
-                  stamped.header.frame_id.c_str(), "map", ex.what());
+                  msg->point.header.frame_id.c_str(), "map", ex.what());
     }
 
     std::ostringstream os{};
@@ -142,8 +137,8 @@ public:
        << std::endl;
     os << "<" << msg->uuid.c_str() << "> a <" << msg->klass.c_str() << ">;"
        << std::endl;
-    os << "properties:location [ gis:x " << msg->point.point.x << "; gis:y "
-       << msg->point.point.y << " ] ." << std::endl;
+    os << "properties:location [ gis:x " << p.point.x << "; gis:y "
+       << p.point.y << " ] ." << std::endl;
 
     RCLCPP_INFO(m_node->get_logger(), "Inserting with statement: %s\n",
                 os.str().c_str());
