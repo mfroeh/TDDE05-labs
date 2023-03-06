@@ -12,6 +12,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -99,7 +100,7 @@ public:
 
           RCLCPP_INFO(this->m_node->get_logger(), "%s\n",
                       doc.toJson().toStdString().c_str());
-          if (doc["results"]["bindings"].toArray().size() == 0) {
+          if (doc.object()["results"].toObject()["bindings"].toArray().size() == 0) {
             insert(msg);
           }
         });
@@ -117,6 +118,10 @@ public:
        << std::endl;
     os << "properties:location [ gis:x " << msg->point.point.x << "; gis:y "
        << msg->point.point.y << " ] ." << std::endl;
+
+
+    RCLCPP_INFO(m_node->get_logger(), "Inserting with statement: %s\n", os.str().c_str());
+
     auto request{std::make_shared<InsertServiceT::Request>()};
     request->graphname = graph_name;
     request->format = "ttl";

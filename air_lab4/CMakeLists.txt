@@ -13,6 +13,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(ros2_kdb_msgs REQUIRED)
 find_package(TstML REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_kdl REQUIRED)
 
 add_executable(visualizer src/visualizer.cpp)
 target_include_directories(visualizer PUBLIC
@@ -27,6 +30,9 @@ ament_target_dependencies(
     visualization_msgs
     ros2_kdb_msgs
     TstML
+    tf2
+    tf2_ros
+    tf2_kdl
 )
 target_link_libraries(visualizer TstMLExecutor)
 
