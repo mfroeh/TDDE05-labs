@@ -100,8 +100,8 @@ public:
     os << "properties:location [ gis:x ?x; gis:y ?y ] . }" << std::endl;
     request->query = os.str();
 
-    RCLCPP_INFO(this->m_node->get_logger(), "query: %s\n",
-                request->query.c_str());
+    // RCLCPP_INFO(this->m_node->get_logger(), "query: %s\n",
+    //             request->query.c_str());
     auto result = query_client->async_send_request(
         request,
         [this, msg](rclcpp::Client<QueryServiceT>::SharedFuture future) {
@@ -111,8 +111,8 @@ public:
           QJsonDocument doc = QJsonDocument::fromJson(
               QByteArray::fromStdString(future.get()->result));
 
-          RCLCPP_INFO(this->m_node->get_logger(), "%s\n",
-                      doc.toJson().toStdString().c_str());
+          // RCLCPP_INFO(this->m_node->get_logger(), "%s\n",
+          //             doc.toJson().toStdString().c_str());
           if (doc.object()["results"].toObject()["bindings"].toArray().size() ==
               0) {
             insert(msg);
@@ -121,7 +121,7 @@ public:
   }
 
   void insert(const SemanticObservation::SharedPtr msg) {
-    PointStamped p{};
+  PointStamped p{};
     try {
       p = tf_buffer->transform(msg->point, "map");
     } catch (const tf2::TransformException &ex) {
