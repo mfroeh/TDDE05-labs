@@ -1,3 +1,5 @@
+#include "air_lab_interfaces/srv/execute_tst.hpp"
+
 #include <geometry_msgs/msg/detail/point__struct.hpp>
 #include <geometry_msgs/msg/detail/point_stamped__struct.hpp>
 #include <rclcpp/executors.hpp>
@@ -15,6 +17,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -30,17 +33,11 @@ using std_msgs::msg::ColorRGBA;
 using visualization_msgs::msg::Marker;
 using visualization_msgs::msg::MarkerArray;
 
-class Visualizer : public Node {
+class HumanDriver : public Node {
 public:
-  Visualizer() : Node{"Visualizer"} {
-    publisher =
-        create_publisher<MarkerArray>("/semantic_sensor_visualizer", 10);
-    timer = create_wall_timer(500ms, std::bind(&Visualizer::query, this));
-  }
+  HumanDriver() : Node{"HumanDriver"} { query(); }
 
 private:
-  Publisher<MarkerArray>::SharedPtr publisher;
-  TimerBase::SharedPtr timer;
   Client<QueryDatabase>::SharedPtr client;
 
   std::string graphname{"semanticobject"};
@@ -52,45 +49,67 @@ private:
     double y;
   };
 
-void visualize(std::vector<Object> &&objects) {
-    MarkerArray arr{};
+  void generate_tst(std::vector<Object> &&objects) {
+    QJsonArray children;
 
-    Marker marker{};
-    marker.id = 1242;
-    marker.header.frame_id = "odom";
-    marker.type = visualization_msgs::msg::Marker::CUBE_LIST;
-    marker.action = 0;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.5;
-    marker.scale.z = 0.5;
-    marker.pose.orientation.w = 1.0;
-    marker.color.a = 1.0;
+    for (auto &&human : objects) {
+      QJsonArray drive_to_children;
+      QJsonObject params;
 
-    for (auto &&obj : objects) {
-      Point p{};
-      p.x = obj.x;
-      p.y = obj.y;
-      marker.points.push_back(p);
+      // Create the Point object for the 'p' parameter
+      QJsonObject p;
+      p.insert("rostype", "Point");
+      p.insert("x", human.x);
+      p.insert("y", human.y);
+      p.insert("z", 0);
 
-      // Depending on class
-      ColorRGBA color;
-      color.a = 1.0;
-      if (obj.klass == "table") {
-        color.r = 1.0;
-        color.g = 0.5;
-        color.b = 0.5;
-      } else {
-        color.r = 0.5;
-        color.g = 1.0;
-        color.b = 0.5;
-      }
-      marker.colors.push_back(color);
+      // Add the 'p' parameter to the params object
+      params.insert("p", p);
+
+      // Set the 'use-motion-planner' parameter
+      params.insert("use-motion-planner", true);
+
+      // Create the drive_to node
+      QJsonObject drive_to_node;
+      drive_to_node.insert("name", "drive-to");
+      drive_to_node.insert("common_params", QJsonObject());
+      drive_to_node.insert("params", params);
+      drive_to_node.insert("children", drive_to_children);
+
+      // Add the drive_to node to the children array
+      children.append(drive_to_node);
+
+    // Create the seq node
+    QJsonObject seq_node;
+    seq_node.insert("name", "seq");
+    seq_node.insert("common_params", QJsonObject());
+    seq_node.insert("params", QJsonObject());
+    seq_node.insert("children", children);
+
+    // Create the JSON document
+    QJsonDocument doc(seq_node);
+
+    // Write the document to a file named 'tst.json'
+    QFile file("drive_to.json");
+    if (file.open(QIODevice::WriteOnly)) {
+      file.write(doc.toJson());
+      file.close();
     }
-    arr.markers.push_back(marker);
 
-    publisher->publish(arr);
+
+  rclcpp::Client<air_lab_interfaces::srv::ExecuteTst>::SharedPtr client = create_client<air_lab_interfaces::srv::ExecuteTst>(
+        "execute_tst");
+    }
+    RCLCPP_INFO(this->get_logger(), "Waiting on service");
+    client->wait_for_service();
+    RCLCPP_INFO(this->get_logger(), "Service online\n");
+
+    auto request{std::make_shared<air_lab_interfaces::srv::ExecuteTst::Request>()};
+    request->tst_file = "drive_to.json";
+    auto response = client->async_send_request(request);
   }
 
+public:
   void query() {
     RCLCPP_INFO(this->get_logger(), "Starting query\n");
     auto request{
@@ -98,11 +117,6 @@ void visualize(std::vector<Object> &&objects) {
     request->graphname = graphname;
 
     std::ostringstream os{};
-    // os << "PREFIX gis: <http://www.ida.liu.se/~TDDE05/gis>" << std::endl
-    //<< "PREFIX properties: <http://www.ida.liu.se/~TDDE05/properties>"
-    //<< std::endl
-    // os << "SELECT ?obj_id ?class ?x ?y WHERE { ?obj_id a ?class; ?x ?y }";
-
     os << "PREFIX gis: <http://www.ida.liu.se/~TDDE05/gis>" << std::endl;
     os << "PREFIX properties: <http://www.ida.liu.se/~TDDE05/properties>"
        << std::endl;
@@ -131,7 +145,7 @@ void visualize(std::vector<Object> &&objects) {
           RCLCPP_INFO(this->get_logger(), "doc: %s\n",
                       doc.toJson().toStdString().c_str());
 
-      QJsonObject jsonObj{doc.object()};
+          QJsonObject jsonObj{doc.object()};
           QJsonArray bindingsArray =
               jsonObj["results"].toObject()["bindings"].toArray();
 
@@ -148,18 +162,19 @@ void visualize(std::vector<Object> &&objects) {
             };
             RCLCPP_INFO(get_logger(), "%s: %f, %f\n", me.uuid.c_str(), me.x,
                         me.y);
-            vec.push_back(me);
+            if (me.klass == "human")
+              vec.push_back(me);
           }
           RCLCPP_INFO(this->get_logger(), "Number of objects:%d", vec.size());
 
-          visualize(std::move(vec));
+          generate_tst(std::move(vec));
         });
   };
 };
 
 int main(int argc, char **argv) {
   init(argc, argv);
-  Visualizer::SharedPtr node{std::make_shared<Visualizer>()};
+  HumanDriver::SharedPtr node{std::make_shared<HumanDriver>()};
   spin(node);
   shutdown();
 }
