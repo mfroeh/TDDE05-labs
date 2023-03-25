@@ -11,6 +11,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "air_lab_interfaces/msg/goal.hpp"
+#include "air_lab_interfaces/msg/goals.hpp"
 #include <algorithm>
 
 using namespace std::chrono_literals;
@@ -18,14 +19,14 @@ using namespace std::chrono_literals;
 using namespace geometry_msgs::msg;
 using namespace nav_msgs::msg;
 
+using air_lab_interfaces::msg::Goal;
+using air_lab_interfaces::msg::Goals;
+
 class MyNode : public rclcpp::Node {
 public:
   MyNode() : Node{"mynode"} {
-    publisher_ =
-        create_publisher<air_lab_interfaces::msg::Goals>("goals_requests", 10);
-    subscription_ = create_subscription<std_msgs::msg::String>(
-        "text_command", 10,
-        std::bind(&MyNode::text_command_callback, this, std::placeholders::_1));
+    publisher_ = create_publisher<air_lab_interfaces::msg::Goals>("goals_requests", 10);
+    subscription_ = create_subscription<std_msgs::msg::String>( "text_command", 10, std::bind(&MyNode::text_command_callback, this, std::placeholders::_1));
   }
 
 private:
@@ -80,6 +81,8 @@ private:
     g.destination = destination;
 
     Goals goals{};
+    goals.goals.push_back(g);
+    publisher_->publish(goals);
   }
 };
 
