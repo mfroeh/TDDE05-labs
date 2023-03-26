@@ -78,6 +78,7 @@ private:
 
       // Add the drive_to node to the children array
       children.append(drive_to_node);
+    }
 
     // Create the seq node
     QJsonObject seq_node;
@@ -95,21 +96,16 @@ private:
       file.write(doc.toJson());
       file.close();
     }
+  auto client = create_client<air_lab_interfaces::srv::ExecuteTst>("execute_tst");
+  RCLCPP_INFO(this->get_logger(), "Waiting on service");
+  client->wait_for_service();
+  RCLCPP_INFO(this->get_logger(), "Service online\n");
 
-
-  rclcpp::Client<air_lab_interfaces::srv::ExecuteTst>::SharedPtr client = create_client<air_lab_interfaces::srv::ExecuteTst>(
-        "execute_tst");
-    }
-    RCLCPP_INFO(this->get_logger(), "Waiting on service");
-    client->wait_for_service();
-    RCLCPP_INFO(this->get_logger(), "Service online\n");
-
-    auto request{std::make_shared<air_lab_interfaces::srv::ExecuteTst::Request>()};
-    request->tst_file = "drive_to.json";
-    auto response = client->async_send_request(request);
+  auto request{std::make_shared<air_lab_interfaces::srv::ExecuteTst::Request>()};
+  request->tst_file = "drive_to.json";
+  auto response = client->async_send_request(request);
   }
 
-public:
   void query() {
     RCLCPP_INFO(this->get_logger(), "Starting query\n");
     auto request{
