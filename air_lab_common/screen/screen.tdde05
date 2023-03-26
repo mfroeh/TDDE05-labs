@@ -16,8 +16,8 @@ bindkey ^e copy
 
 screen 0
 title "simple sim"
-stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py\015" #
-#stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py world:=office_1\015" #
+# stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py\015" #
+stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py world:=office_1\015" #
 
 screen 1
 title "Create file and insert into database"

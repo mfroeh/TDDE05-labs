@@ -34,6 +34,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
 
   void text_command_callback(const std_msgs::msg::String::SharedPtr msg) {
+    RCLCPP_INFO(get_logger(), "Got message: %s", msg->data.c_str());
+
     std::string cmd{};
     std::transform(std::begin(msg->data), std::end(msg->data),
                    std::back_inserter(cmd),
@@ -79,6 +81,8 @@ private:
     g.type = type;
     g.object = object;
     g.destination = destination;
+
+    RCLCPP_INFO(get_logger(), "Publishing: %s, %s, %s", g.type.c_str(), g.object.c_str(), g.destination);
 
     Goals goals{};
     goals.goals.push_back(g);
