@@ -64,7 +64,7 @@ private:
       // Everything else must be destinations
       else {
         destination = word;
-        //destination[0] = std::toupper(destination[0]);
+        destination[0] = std::toupper(destination[0]);
       }
     }
 

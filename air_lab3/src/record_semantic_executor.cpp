@@ -127,6 +127,7 @@ public:
     } catch (const tf2::TransformException &ex) {
       RCLCPP_INFO(m_node->get_logger(), "Could not transform %s to %s: %s",
                   msg->point.header.frame_id.c_str(), "map", ex.what());
+                  return;
     }
 
     std::ostringstream os{};

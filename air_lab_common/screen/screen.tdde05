@@ -15,34 +15,53 @@ bindkey ^e copy
 # Pre-defined tabs
 
 screen 0
-title "simple sim"
-# stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py\015" #
-stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py world:=office_1\015" #
+title "Lab1-4: simple sim"
+stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py" #
 
 screen 1
-title "Create file and insert into database"
-stuff "ros2 run air_simple_sim generate_rdf office_1; ros2 service call /kdb_server/insert_triples  ros2_kdb_msgs/srv/InsertTriples \"\ngraphname: 'semanticobject'\nformat: 'ttl'\ncontent: '`ros2 run air_simple_sim generate_rdf office_1`'\""
+title "Lab5: office sim"
+stuff "start-tdde05; ros2 launch air_bringup turtle.launch.py world:=office_1" #
 
 screen 2
+title "Lab5: Create data file and insert into database"
+stuff "ros2 run air_simple_sim generate_rdf office_1; ros2 service call /kdb_server/insert_triples  ros2_kdb_msgs/srv/InsertTriples \"\ngraphname: 'semanticobject'\nformat: 'ttl'\ncontent: '`ros2 run air_simple_sim generate_rdf office_1`'\""
+
+screen 3
 title "rviz"
 stuff "start-tdde05; rviz2 -d $HOME/TDDE05/ros2_ws/src/labs/air_lab_common/rviz/default.rviz\015"
 
-screen 3
+screen 4
 title "rqt"
 stuff "start-tdde05; rqt\015"
 
-screen 6
+screen 5
 title "launch tst_executor"
-stuff "start-tdde05; ros2 run air_lab3 tst_executor"
+stuff "start-tdde05; ros2 run air_lab3 tst_executor\015"
 
-screen 7
+screen 6
 title "launch database server"
 stuff "start-tdde05; ros2 run ros2_kdb server\015" #rm -rf $HOME/.lrs_kdb/stores/;
 
-screen 8
-title "execute explore record semantic"
+screen 7
+title "Lab4: Execute explore record semantic"
 stuff "start-tdde05; ros2 service call /execute_tst air_lab_interfaces/srv/ExecuteTst \"tst_file: '`ros2 pkg prefix air_tsts`/share/air_tsts/tsts/explore_record_semantic.json'\""
 
-screen 9
-title "visualizer"
+screen 8
+title "Lab4: Visualizer"
 stuff "start-tdde05; ros2 run air_lab4 visualizer"
+
+screen 9
+title "Lab4: Human Driver"
+stuff "start-tdde05; ros2 run air_lab4 human_driver"
+
+screen 10
+title "Lab5: Text Command"
+stuff "start-tdde05; ros2 run air_lab5 text_command"
+
+screen 11
+title "Lab5: Decision"
+stuff "start-tdde05; ros2 run air_lab5 decision"
+
+screen 12
+title "Lab5: Query"
+stuff "start-tdde05; ros2 topic pub /text_command std_msgs/String \"data:\" --once"
