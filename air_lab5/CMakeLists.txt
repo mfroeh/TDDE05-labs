@@ -11,6 +11,9 @@ find_package(std_msgs REQUIRED)
 find_package(air_lab_interfaces REQUIRED)
 find_package(ros2_kdb_msgs REQUIRED)
 find_package(TstML REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 add_executable(text_command src/text_command.cpp)
 target_include_directories(text_command PUBLIC
@@ -28,7 +31,7 @@ target_include_directories(decision PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 target_compile_features(decision PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(decision rclcpp std_msgs air_lab_interfaces ros2_kdb_msgs TstML)
+ament_target_dependencies(decision rclcpp std_msgs air_lab_interfaces ros2_kdb_msgs TstML nav2_msgs nav_msgs geometry_msgs)
 target_link_libraries(decision TstMLExecutor)
 
 install(TARGETS decision

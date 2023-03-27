@@ -59,22 +59,22 @@ private:
       // Filter out objects
       if (word == "coffee") {
         object = word;
-        object[0] = std::toupper(object[0]);
+        //object[0] = std::toupper(object[0]);
       }
       // Everything else must be destinations
       else {
         destination = word;
-        destination[0] = std::toupper(destination[0]);
+        //destination[0] = std::toupper(destination[0]);
       }
     }
 
     if (iss >> word) {
       destination = word;
-      destination[0] = std::toupper(destination[0]);
+      //destination[0] = std::toupper(destination[0]);
     }
 
     if (object != "" && destination == "") {
-      destination = "User";
+      destination = "user";
     }
 
     air_lab_interfaces::msg::Goal g{};
@@ -82,7 +82,7 @@ private:
     g.object = object;
     g.destination = destination;
 
-    RCLCPP_INFO(get_logger(), "Publishing: %s, %s, %s", g.type.c_str(), g.object.c_str(), g.destination);
+    RCLCPP_INFO(get_logger(), "Publishing: %s, %s, %s", g.type.c_str(), g.object.c_str(), g.destination.c_str());
 
     Goals goals{};
     goals.goals.push_back(g);
